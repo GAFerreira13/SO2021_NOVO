@@ -22,7 +22,8 @@ int main (int argc, char *argv[]) {
 
 	printf ("Enter the input string! Max: %d bytes. \n",STR_LEN );
 
-	fgets (aux, STR_LEN, stdin);
+	//fgets (aux, STR_LEN, stdin);
+	puts (aux);
 	int char_num = write ( f, aux, strlen(aux));
 
 	if (char_num < 0) {

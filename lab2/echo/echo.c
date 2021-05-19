@@ -114,7 +114,7 @@ static void echo_exit(void)
 	printk(KERN_ALERT "major: %d\n", a);
 
 	cdev_del(echo_cdev);
-	
+
 }
 
 int echo_open(struct inode *inodep, struct file *filep)
@@ -142,7 +142,6 @@ ssize_t echo_read(struct file *filep, char __user *buff, size_t count, loff_t *o
 	if (RW_ERR == 0)
 	{
 		a = copy_to_user(buff, filep, (int)count);
-		printk(KERN_ALERT "%s\n", (char *)buff);
 		if (a != 0)
 		{
 			RW_ERR = 1;
@@ -155,7 +154,8 @@ ssize_t echo_read(struct file *filep, char __user *buff, size_t count, loff_t *o
 		}
 	}
 	else {
-		printk(KERN_ALERT "Houve um erro no ssize_t read previo\n");
+		printk(KERN_ALERT "Houve um erro no ssize_t read anterior\n");
+		RW_ERR = 0;
 		return -1;
 } }
 
@@ -164,11 +164,11 @@ ssize_t echo_write(struct file *filep, const char __user *buff, size_t count, lo
 {
 	if (RW_ERR == 0)
 	{
-		int a, b = 0;
+		int a=0, b = 0;
 		char *temp = kmalloc(count + 1, GFP_KERNEL);
 		a = copy_from_user(temp, buff, (unsigned long)count);
-		temp[count + 1] = '0';
-		b = copy_to_user(temp, buff, (unsigned long)count + 1);
+		temp[count] = '\0';
+		b = copy_to_user(buff, temp, (unsigned long)count + 1);
 		printk(KERN_ALERT "%s\n", temp);
 		kfree(temp);
 		if (a != 0 || b != 0)
@@ -183,7 +183,7 @@ ssize_t echo_write(struct file *filep, const char __user *buff, size_t count, lo
 		}
 	}
 	else {
-		printk(KERN_ALERT "Houve um erro no ssize_t write previo\n");
+		printk(KERN_ALERT "Houve um erro no ssize_t write anterior\n");
 		RW_ERR = 0;
 		return -1;
 } }
