@@ -81,8 +81,6 @@ struct file_operations fops = {
 	.write = serp_write,
 };
 
-int RW_ERR = 0;
-
 struct file *serp_file;
 struct resource *serp_res;
 int port_busy = 0;
