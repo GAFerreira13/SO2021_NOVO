@@ -184,6 +184,7 @@ ssize_t echo_write(struct file *filep, const char __user *buff, size_t count, lo
 	}
 	else {
 		printk(KERN_ALERT "Houve um erro no ssize_t write previo\n");
+		RW_ERR = 0;
 		return -1;
 } }
 
