@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
 			return -1;
 		}
 	}
-	printf("End of read\n", c);
+	printf("End of read\n");
 
 	/* if (char_num < 0) {
 		printf ("Errro writing in device! \n");
