@@ -1,8 +1,12 @@
-/*                                                     
- * $Id: hello.c,v 1.5 2004/10/26 03:32:21 corbet Exp $ 
- */                                                    
+/*
+ * $Id: hello.c,v 1.5 2004/10/26 03:32:21 corbet Exp $
+ */
 #include <linux/init.h>
 #include <linux/module.h>
+#include <linux/slab.h>
+#include <linux/mm.h>
+#include <linux/types.h>
+
 MODULE_LICENSE("Dual BSD/GPL");
 
 static int hello_init(void)
