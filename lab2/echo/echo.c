@@ -75,11 +75,10 @@ struct file_operations fops = {
 	.read = echo_read,
 	.write = echo_write,
 };
-struct file *echo_file;
-//struct resource *echo_res;
-//int port_busy = 0;
-//struct inode *echo_inode;
 
+int RW_ERR = 0;
+
+struct file *echo_file;
 
 static int echo_init(void)
 {
@@ -99,16 +98,7 @@ static int echo_init(void)
 	echo_cdev->ops = &fops;
 	echo_cdev->owner = THIS_MODULE;
 
-	// echo_fops.llseek = &no_llseek;
-	// echo_fops.read = &read;
-	// echo_fops.write = &write;
-	// echo_fops.open = &open;
-	// echo_fops.release = &release;
-
 	b = cdev_add(echo_cdev, echo_number, ECHO_DEVS);
-
-	//echo_res = request_region(0x3f8, 8, "echo");
-	//Setup_Serial(PORT_COM1, 96, BITS_8 | PARITY_EVEN | STOP_TWO);
 
 	return 0;
 }
@@ -124,8 +114,7 @@ static void echo_exit(void)
 	printk(KERN_ALERT "major: %d\n", a);
 
 	cdev_del(echo_cdev);
-	//kfree(echo_cdev);
-	//release_region(0x3f8, 8);
+	
 }
 
 int echo_open(struct inode *inodep, struct file *filep)
@@ -142,111 +131,61 @@ int echo_open(struct inode *inodep, struct file *filep)
 int echo_release(struct inode *inodep, struct file *filep)
 {
 	printk(KERN_ALERT "int release\n");
-	//kfree(echo_cdev);
-	//kfree(echo_file);
-	//kfree(echo_res);
-
 	return 0;
 }
 
-//para executar em todos os close()
-/*
-int flush(struct inode *inodep, fl_owner_t id)
-{
-}
-*/
-
-/*
-*Both read and write should return the number of bytes transferred, if the operation is successful. Otherwise, if no byte is successfully transferred, then they should return a negative number. However, if there is an error after successfully transferring some bytes, both should return the number of bytes transferred, and an error code in the following call of the function. This requires the DD to recall the occurrence of an error from a call to the next.
-*/
 
 // read will return the number of characters written by the DD on the device since it was last loaded
 ssize_t echo_read(struct file *filep, char __user *buff, size_t count, loff_t *offp)
 {
 	unsigned long a;
-	a = copy_to_user(buff, filep, (int)count);
-	printk(KERN_ALERT "%s\n", (char *)buff);
-	if (a > 0)
+	if (RW_ERR == 0)
 	{
-		return (ssize_t) a;
+		a = copy_to_user(buff, filep, (int)count);
+		printk(KERN_ALERT "%s\n", (char *)buff);
+		if (a != 0)
+		{
+			RW_ERR = 1;
+			return (ssize_t)count - a;
+		}
+		else
+		{
+			RW_ERR = 0;
+			return (ssize_t)count;
+		}
 	}
-	else return -1;
-}
+	else {
+		printk(KERN_ALERT "Houve um erro no ssize_t read previo\n");
+		return -1;
+} }
 
 //a write to an echo device will make it print whatever an application writes to it on the console
 ssize_t echo_write(struct file *filep, const char __user *buff, size_t count, loff_t *offp)
 {
-	char *temp = kmalloc(count + 1, GFP_KERNEL);
-	copy_from_user(temp, buff, (unsigned long)count);
-	temp[count + 1] = '0';
-	copy_to_user(buff, temp, (unsigned long)count + 1);
-	printk(KERN_ALERT "%s\n", temp);
-	kfree(temp);
-	return 0;
-}
-
-/* int setup_serial(int COM_port, int baud, unsigned char misc)
-{
-	word divisor;
-
-	if (port_busy)
-		return (port_busy);
-
-	port_busy = COM_port;
-
-	write_uart(COM_port, REG_IER, 0);
-	write_uart(COM_port, REG_LCR, (int)DLR_ON);
-	divisor = 0x1c200 / baud;
-	//outpw(COM_port, divisor);	//original
-	outw(divisor, COM_port); //como diz no guiao
-
-	write_uart(COM_port, REG_LCR, (int)misc);
-	return 1;
-}
-
-void write_uart(int COM_port, int reg, int data)
-{
-
-	//outp((COM_port + reg), data);		//original
-	outb(data, (COM_port + reg)); //como diz no guiao
-}
-
-int read_uart(int COM_port, int reg)
-{
-	return (inb(COM_port + reg));
-}
-
-void serial_write(unsigned char ch)
-{
-	while (1)
+	if (RW_ERR == 0)
 	{
-		if (!((unsigned char)read_uart(port_busy, REG_LSR) & 0x20))
+		int a, b = 0;
+		char *temp = kmalloc(count + 1, GFP_KERNEL);
+		a = copy_from_user(temp, buff, (unsigned long)count);
+		temp[count + 1] = '0';
+		b = copy_to_user(temp, buff, (unsigned long)count + 1);
+		printk(KERN_ALERT "%s\n", temp);
+		kfree(temp);
+		if (a != 0 || b != 0)
 		{
-			schedule();
+			RW_ERR = 1;
+			return (ssize_t)count - (a + b);
 		}
-		else break;
+		else
+		{
+			RW_ERR = 0;
+			return (ssize_t)count;
+		}
 	}
-
-	write_uart(port_busy, REG_THR, (int)ch);
-}
-
-int serial_read (void) {
-	unsigned char a, b;
-	b = read_uart(port_busy, REG_LSR);
-	if (b & (UART_LSR_FE | UART_LSR_OE | UART_LSR_PE))
-	{
-		return -EIO;
-	}
-	else if (b & UART_LSR_DR)
-	{
-		a = read_uart(port_busy, REG_RHR);
-		if (a != 0) return 1;
-		else return -EIO;
-
-	}
-	else return -EAGAIN;
-
-} */
+	else {
+		printk(KERN_ALERT "Houve um erro no ssize_t write previo\n");
+		return -1;
+} }
 
 module_init(echo_init);
 module_exit(echo_exit);
