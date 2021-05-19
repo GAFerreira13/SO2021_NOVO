@@ -57,30 +57,80 @@ typedef short word;
 
 MODULE_LICENSE("Dual BSD/GPL");
 
+#define ECHO_DEVS 1
+
+
+int echo_open(struct inode *inodep, struct file *filep);
+int echo_release(struct inode *inodep, struct file *filep);
+ssize_t echo_read(struct file *filep, char __user *buff, size_t count, loff_t *offp);
+ssize_t echo_write(struct file *filep, const char __user *buff, size_t count, loff_t *offp);
+void write_uart(int COM_port, int reg, int data);
+int read_uart(int COM_port, int reg);
+void serial_write(unsigned char ch);
+int serial_read(void);
+int setup_serial(int COM_port, int baud, unsigned char misc);
+
+
 dev_t echo_number;
 struct cdev *echo_cdev;
-struct file_operations echo_fops;
+struct file_operations fops = {
+	.owner = THIS_MODULE,
+	.open = echo_open,
+	.release = echo_release,
+	.read = echo_read,
+	.write = echo_write,
+};
+
+int RW_ERR = 0;
+
 struct file *echo_file;
 struct resource *echo_res;
 int port_busy = 0;
 int RW_ERR = 0;
 //struct inode *echo_inode;
 
+
+static int echo_init(void)
+{
+	int a, b = 0;
+
+	printk(KERN_ALERT "Hey hey world\n");
+
+	a = alloc_chrdev_region(&echo_number, 0, 1, "echo");
+	if (a != 0)
+	{
+		printk(KERN_ALERT "Erro a criar major device number");
+	}
+
+	printk(KERN_ALERT "major: %d\n", MAJOR(echo_number));
+
+	echo_cdev = cdev_alloc();
+	echo_cdev->ops = &fops;
+	echo_cdev->owner = THIS_MODULE;
+
+	b = cdev_add(echo_cdev, echo_number, ECHO_DEVS);
+
+	echo_res = request_region(0x3f8, 8, "echo");
+	setup_serial(PORT_COM1, 96, BITS_8 | PARITY_EVEN | STOP_TWO);
+
+	return 0;
+}
+
+
 static void echo_exit(void)
 {
 	unsigned int a = MAJOR(echo_number);
 
-	unregister_chrdev_region(echo_number, 1);
+	unregister_chrdev_region(echo_number, ECHO_DEVS);
 
 	printk(KERN_ALERT "Goodbye, cruel world\n");
 	printk(KERN_ALERT "major: %d\n", a);
 
 	cdev_del(echo_cdev);
 
-	release_region(0x3f8, 8);
 }
 
-int open(struct inode *inodep, struct file *filep)
+int echo_open(struct inode *inodep, struct file *filep)
 {
 	int a = 0;
 	filep->private_data = inodep->i_cdev;
@@ -91,36 +141,20 @@ int open(struct inode *inodep, struct file *filep)
 	return 0;
 }
 
-int release(struct inode *inodep, struct file *filep)
+int echo_release(struct inode *inodep, struct file *filep)
 {
 	printk(KERN_ALERT "int release\n");
-	kfree(echo_cdev);
-	kfree(echo_file);
-	kfree(echo_res);
-
 	return 0;
 }
 
-//para executar em todos os close()
-/*
-int flush(struct inode *inodep, fl_owner_t id)
-{
-
-}
-*/
-
-/*
-*Both read and write should return the number of bytes transferred, if the operation is successful. Otherwise, if no byte is successfully transferred, then they should return a negative number. However, if there is an error after successfully transferring some bytes, both should return the number of bytes transferred, and an error code in the following call of the function. This requires the DD to recall the occurrence of an error from a call to the next.
-*/
 
 // read will return the number of characters written by the DD on the device since it was last loaded
-ssize_t read(struct file *filep, char __user *buff, size_t count, loff_t *offp)
+ssize_t echo_read(struct file *filep, char __user *buff, size_t count, loff_t *offp)
 {
 	unsigned long a;
 	if (RW_ERR == 0)
 	{
 		a = copy_to_user(buff, filep, (int)count);
-		printk(KERN_ALERT "%s\n", (char *)buff);
 		if (a != 0)
 		{
 			RW_ERR = 1;
@@ -133,20 +167,21 @@ ssize_t read(struct file *filep, char __user *buff, size_t count, loff_t *offp)
 		}
 	}
 	else {
-		printk(KERN_ALERT "Houve um erro no ssize_t read previo\n");
+		printk(KERN_ALERT "Houve um erro no ssize_t read anterior\n");
+		RW_ERR = 0;
 		return -1;
 } }
 
 //a write to an echo device will make it print whatever an application writes to it on the console
-ssize_t write(struct file *filep, const char __user *buff, size_t count, loff_t *offp)
+ssize_t echo_write(struct file *filep, const char __user *buff, size_t count, loff_t *offp)
 {
 	if (RW_ERR == 0)
 	{
-		int a, b = 0;
+		int a=0, b = 0;
 		char *temp = kmalloc(count + 1, GFP_KERNEL);
 		a = copy_from_user(temp, buff, (unsigned long)count);
-		temp[count + 1] = '0';
-		b = copy_to_user(temp, buff, (unsigned long)count + 1);
+		temp[count] = '\0';
+		b = copy_to_user(buff, temp, (unsigned long)count + 1);
 		printk(KERN_ALERT "%s\n", temp);
 		kfree(temp);
 		if (a != 0 || b != 0)
@@ -161,7 +196,8 @@ ssize_t write(struct file *filep, const char __user *buff, size_t count, loff_t 
 		}
 	}
 	else {
-		printk(KERN_ALERT "Houve um erro no ssize_t write previo\n");
+		printk(KERN_ALERT "Houve um erro no ssize_t write anterior\n");
+		RW_ERR = 0;
 		return -1;
 } }
 
@@ -229,38 +265,6 @@ int setup_serial(int COM_port, int baud, unsigned char misc)
 
 	write_uart(COM_port, REG_LCR, (int)misc);
 	return 1;
-}
-
-static int echo_init(void)
-{
-	int a, b = 0;
-
-	printk(KERN_ALERT "Hello, world\n");
-
-	a = alloc_chrdev_region(&echo_number, 0, 1, "echo");
-	if (a != 0)
-	{
-		printk(KERN_ALERT "Erro a criar major device number");
-	}
-
-	printk(KERN_ALERT "major: %d\n", MAJOR(echo_number));
-
-	echo_cdev = cdev_alloc();
-	echo_cdev->ops = &echo_fops;
-	echo_cdev->owner = THIS_MODULE;
-
-	echo_fops.llseek = &no_llseek;
-	echo_fops.read = &read;
-	echo_fops.write = &write;
-	echo_fops.open = &open;
-	echo_fops.release = &release;
-
-	b = cdev_add(echo_cdev, echo_number, 1);
-
-	echo_res = request_region(0x3f8, 8, "echo");
-	setup_serial(PORT_COM1, 96, BITS_8 | PARITY_EVEN | STOP_TWO);
-
-	return 0;
 }
 
 module_init(echo_init);
