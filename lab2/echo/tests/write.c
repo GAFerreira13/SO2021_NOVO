@@ -4,7 +4,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#define STR_LEN 16
+#define STR_LEN 100
 
 int main (int argc, char *argv[]) {
 

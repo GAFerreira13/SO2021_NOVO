@@ -4,7 +4,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#define STR_LEN 16
+#define STR_LEN 100
 
 int main (int argc, char *argv[]) {
 
@@ -22,8 +22,8 @@ int main (int argc, char *argv[]) {
 
 	printf ("Enter the input string! Max: %d bytes. \n",STR_LEN );
 
-	//fgets (aux, STR_LEN, stdin);
-	int char_num = write ( f, aux, strlen(aux));
+	fgets (aux, STR_LEN, stdin);
+	int char_num = read ( f, aux, strlen(aux));
 
 	if (char_num < 0) {
 		printf ("Errro writing in device! \n");
