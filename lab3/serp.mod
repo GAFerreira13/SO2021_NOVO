@@ -1,2 +1,2 @@
-/home/goncalof/host/lab2/echo/echo.o
+/home/goncalof/host/lab3/serp.o
 

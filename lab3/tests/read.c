@@ -11,34 +11,41 @@
 
 #define STR_LEN 16
 
-int main (int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
 
-	if (argc != 2) {
+	if (argc != 2)
+	{
 		printf("Wrong number of arguments! Usage: ./open device_name \n");
 	}
 
-	char aux [STR_LEN]= "/dev/";
-	int f = open (strcat(aux,argv[1]), O_RDWR);
+	char aux[STR_LEN] = "/dev/";
+	int f = open(strcat(aux, argv[1]), O_RDWR);
 
-	if (f < 0) {
-		printf ("Could not open device \"%s\"! \n", argv[1]);
+	if (f < 0)
+	{
+		printf("Could not open device \"%s\"! \n", argv[1]);
 		return -1;
 	}
 
-	printf ("Enter the input string! Max: %d bytes. \n",STR_LEN );
+	printf("Enter the input string! Max: %d bytes. \n", STR_LEN);
 
 	//fgets (aux, STR_LEN, stdin);
 	//int char_num = read ( f, aux, strlen(aux));
 
-	while( aux[0] != '!'){
-        if(read(f, aux, 1) != -1) {
-					printf("Char number: %d | Char: %c\n", c[0], c[0]);
-				} else {
-					printf("Error reading char\n");
-					return -1;
-				}
-    }
-    printf("End of read\n",c);
+	while (aux[0] != '!')
+	{
+		if (read(f, aux, 1) != -1)
+		{
+			printf("Char number: %d | Char: %c\n", aux[0], aux[0]);
+		}
+		else
+		{
+			printf("Error reading char\n");
+			return -1;
+		}
+	}
+	printf("End of read\n", c);
 
 	/* if (char_num < 0) {
 		printf ("Errro writing in device! \n");
@@ -48,13 +55,12 @@ int main (int argc, char *argv[]) {
 		printf ("Success! \n");
 	} */
 
-
-	if (close(f)) {
-		printf ("Error closing file %d! \n", f);
+	if (close(f))
+	{
+		printf("Error closing file %d! \n", f);
 		return -1;
 	}
 
-	printf ("Device \"%s\" closed successfully! \n", argv[1]);
+	printf("Device \"%s\" closed successfully! \n", argv[1]);
 	return 0;
-
 }

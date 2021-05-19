@@ -59,7 +59,6 @@ MODULE_LICENSE("Dual BSD/GPL");
 
 #define serp_DEVS 1
 
-
 int serp_open(struct inode *inodep, struct file *filep);
 int serp_release(struct inode *inodep, struct file *filep);
 ssize_t serp_read(struct file *filep, char __user *buff, size_t count, loff_t *offp);
@@ -69,7 +68,6 @@ int read_uart(int COM_port, int reg);
 void serial_write(unsigned char ch);
 int serial_read(void);
 int setup_serial(int COM_port, int baud, unsigned char misc);
-
 
 dev_t serp_number;
 struct cdev *serp_cdev;
@@ -86,7 +84,6 @@ struct resource *serp_res;
 int port_busy = 0;
 int RW_ERR = 0;
 //struct inode *serp_inode;
-
 
 static int serp_init(void)
 {
@@ -114,7 +111,6 @@ static int serp_init(void)
 	return 0;
 }
 
-
 static void serp_exit(void)
 {
 	unsigned int a = MAJOR(serp_number);
@@ -125,7 +121,6 @@ static void serp_exit(void)
 	printk(KERN_ALERT "major: %d\n", a);
 
 	cdev_del(serp_cdev);
-
 }
 
 int serp_open(struct inode *inodep, struct file *filep)
@@ -145,7 +140,6 @@ int serp_release(struct inode *inodep, struct file *filep)
 	return 0;
 }
 
-
 // read will return the number of characters written by the DD on the device since it was last loaded
 ssize_t serp_read(struct file *filep, char __user *buff, size_t count, loff_t *offp)
 {
@@ -164,18 +158,20 @@ ssize_t serp_read(struct file *filep, char __user *buff, size_t count, loff_t *o
 			return (ssize_t)count;
 		}
 	}
-	else {
+	else
+	{
 		printk(KERN_ALERT "Houve um erro no ssize_t read anterior\n");
 		RW_ERR = 0;
 		return -1;
-} }
+	}
+}
 
 //a write to an serp device will make it print whatever an application writes to it on the console
 ssize_t serp_write(struct file *filep, const char __user *buff, size_t count, loff_t *offp)
 {
 	if (RW_ERR == 0)
 	{
-		int a=0, b = 0;
+		int a = 0, b = 0;
 		char *temp = kmalloc(count + 1, GFP_KERNEL);
 		a = copy_from_user(temp, buff, (unsigned long)count);
 		temp[count] = '\0';
@@ -193,11 +189,13 @@ ssize_t serp_write(struct file *filep, const char __user *buff, size_t count, lo
 			return (ssize_t)count;
 		}
 	}
-	else {
+	else
+	{
 		printk(KERN_ALERT "Houve um erro no ssize_t write anterior\n");
 		RW_ERR = 0;
 		return -1;
-} }
+	}
+}
 
 void write_uart(int COM_port, int reg, int data)
 {
