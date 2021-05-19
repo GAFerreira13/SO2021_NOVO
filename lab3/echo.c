@@ -57,13 +57,13 @@ typedef short word;
 
 MODULE_LICENSE("Dual BSD/GPL");
 
-#define ECHO_DEVS 1
+#define serp_DEVS 1
 
 
-int echo_open(struct inode *inodep, struct file *filep);
-int echo_release(struct inode *inodep, struct file *filep);
-ssize_t echo_read(struct file *filep, char __user *buff, size_t count, loff_t *offp);
-ssize_t echo_write(struct file *filep, const char __user *buff, size_t count, loff_t *offp);
+int serp_open(struct inode *inodep, struct file *filep);
+int serp_release(struct inode *inodep, struct file *filep);
+ssize_t serp_read(struct file *filep, char __user *buff, size_t count, loff_t *offp);
+ssize_t serp_write(struct file *filep, const char __user *buff, size_t count, loff_t *offp);
 void write_uart(int COM_port, int reg, int data);
 int read_uart(int COM_port, int reg);
 void serial_write(unsigned char ch);
@@ -71,66 +71,66 @@ int serial_read(void);
 int setup_serial(int COM_port, int baud, unsigned char misc);
 
 
-dev_t echo_number;
-struct cdev *echo_cdev;
+dev_t serp_number;
+struct cdev *serp_cdev;
 struct file_operations fops = {
 	.owner = THIS_MODULE,
-	.open = echo_open,
-	.release = echo_release,
-	.read = echo_read,
-	.write = echo_write,
+	.open = serp_open,
+	.release = serp_release,
+	.read = serp_read,
+	.write = serp_write,
 };
 
 int RW_ERR = 0;
 
-struct file *echo_file;
-struct resource *echo_res;
+struct file *serp_file;
+struct resource *serp_res;
 int port_busy = 0;
 int RW_ERR = 0;
-//struct inode *echo_inode;
+//struct inode *serp_inode;
 
 
-static int echo_init(void)
+static int serp_init(void)
 {
 	int a, b = 0;
 
 	printk(KERN_ALERT "Hey hey world\n");
 
-	a = alloc_chrdev_region(&echo_number, 0, 1, "echo");
+	a = alloc_chrdev_region(&serp_number, 0, 1, "serp");
 	if (a != 0)
 	{
 		printk(KERN_ALERT "Erro a criar major device number");
 	}
 
-	printk(KERN_ALERT "major: %d\n", MAJOR(echo_number));
+	printk(KERN_ALERT "major: %d\n", MAJOR(serp_number));
 
-	echo_cdev = cdev_alloc();
-	echo_cdev->ops = &fops;
-	echo_cdev->owner = THIS_MODULE;
+	serp_cdev = cdev_alloc();
+	serp_cdev->ops = &fops;
+	serp_cdev->owner = THIS_MODULE;
 
-	b = cdev_add(echo_cdev, echo_number, ECHO_DEVS);
+	b = cdev_add(serp_cdev, serp_number, serp_DEVS);
 
-	echo_res = request_region(0x3f8, 8, "echo");
+	serp_res = request_region(0x3f8, 8, "serp");
 	setup_serial(PORT_COM1, 96, BITS_8 | PARITY_EVEN | STOP_TWO);
 
 	return 0;
 }
 
 
-static void echo_exit(void)
+static void serp_exit(void)
 {
-	unsigned int a = MAJOR(echo_number);
+	unsigned int a = MAJOR(serp_number);
 
-	unregister_chrdev_region(echo_number, ECHO_DEVS);
+	unregister_chrdev_region(serp_number, serp_DEVS);
 
 	printk(KERN_ALERT "Goodbye, cruel world\n");
 	printk(KERN_ALERT "major: %d\n", a);
 
-	cdev_del(echo_cdev);
+	cdev_del(serp_cdev);
 
 }
 
-int echo_open(struct inode *inodep, struct file *filep)
+int serp_open(struct inode *inodep, struct file *filep)
 {
 	int a = 0;
 	filep->private_data = inodep->i_cdev;
@@ -141,7 +141,7 @@ int echo_open(struct inode *inodep, struct file *filep)
 	return 0;
 }
 
-int echo_release(struct inode *inodep, struct file *filep)
+int serp_release(struct inode *inodep, struct file *filep)
 {
 	printk(KERN_ALERT "int release\n");
 	return 0;
@@ -149,7 +149,7 @@ int echo_release(struct inode *inodep, struct file *filep)
 
 
 // read will return the number of characters written by the DD on the device since it was last loaded
-ssize_t echo_read(struct file *filep, char __user *buff, size_t count, loff_t *offp)
+ssize_t serp_read(struct file *filep, char __user *buff, size_t count, loff_t *offp)
 {
 	unsigned long a;
 	if (RW_ERR == 0)
@@ -172,8 +172,8 @@ ssize_t echo_read(struct file *filep, char __user *buff, size_t count, loff_t *o
 		return -1;
 } }
 
-//a write to an echo device will make it print whatever an application writes to it on the console
-ssize_t echo_write(struct file *filep, const char __user *buff, size_t count, loff_t *offp)
+//a write to an serp device will make it print whatever an application writes to it on the console
+ssize_t serp_write(struct file *filep, const char __user *buff, size_t count, loff_t *offp)
 {
 	if (RW_ERR == 0)
 	{
@@ -267,5 +267,5 @@ int setup_serial(int COM_port, int baud, unsigned char misc)
 	return 1;
 }
 
-module_init(echo_init);
-module_exit(echo_exit);
+module_init(serp_init);
+module_exit(serp_exit);
