@@ -19,6 +19,7 @@
 #include <linux/cdev.h>
 #include <linux/ioport.h>
 #include <linux/sched.h>
+#include <linux/delay.h>
 
 #define PORT_COM1 0x3f8
 typedef short word;
@@ -140,12 +141,11 @@ int serp_release(struct inode *inodep, struct file *filep)
 	return 0;
 }
 
-// read will return the number of characters written by the DD on the device since it was last loaded
 ssize_t serp_read(struct file *filep, char __user *buff, size_t count, loff_t *offp)
 {
 	unsigned long a;
 	if (RW_ERR == 0)
-	{
+	{ /*
 		a = copy_to_user(buff, filep, (int)count);
 		if (a != 0)
 		{
@@ -156,7 +156,9 @@ ssize_t serp_read(struct file *filep, char __user *buff, size_t count, loff_t *o
 		{
 			RW_ERR = 0;
 			return (ssize_t)count;
-		}
+		} */
+		serial_read();
+
 	}
 	else
 	{
@@ -238,12 +240,18 @@ int serial_read(void)
 	{
 		a = read_uart(port_busy, REG_RHR);
 		if (a != 0)
-			return 1;
+		printk(KERN_ALERT "carater recebido: %c", a);
+			return a;
 		else
 			return -EIO;
 	}
-	else
-		return -EAGAIN;
+	else {
+		while (1)
+		{
+			set_current_state(TASK_INTERRUPTIBLE);
+			schedule_timeout(200); //sao 100 jfs/s, ou seja, 2 segundos
+		}
+	}
 }
 
 int setup_serial(int COM_port, int baud, unsigned char misc)
