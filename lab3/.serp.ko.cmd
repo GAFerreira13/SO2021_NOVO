@@ -1,1 +1,1 @@
-cmd_/host/lab3/serp.ko := ld -m elf_i386 -m elf_i386 -r -o /host/lab3/serp.ko /host/lab3/serp.o /host/lab3/serp.mod.o
+cmd_/home/goncalof/host/lab3/serp.ko := ld -r -m elf_x86_64 --build-id=sha1  -T scripts/module.lds -o /home/goncalof/host/lab3/serp.ko /home/goncalof/host/lab3/serp.o /home/goncalof/host/lab3/serp.mod.o;  true
