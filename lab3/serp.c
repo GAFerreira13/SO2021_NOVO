@@ -172,7 +172,7 @@ ssize_t serp_write(struct file *filep, const char __user *buff, size_t count, lo
 	if (RW_ERR == 0)
 	{
 		int i;
-			int a = 0;
+		int a = 0;
 		/*
 		b = copy_to_user(buff, temp, (unsigned long)count + 1);
 		printk(KERN_ALERT "%s\n", temp);
@@ -183,7 +183,8 @@ ssize_t serp_write(struct file *filep, const char __user *buff, size_t count, lo
 		a = copy_from_user(temp, buff, (unsigned long)count);
 		temp[count] = '\0';
 
-		for (i = 0; i < count; i++) {
+		for (i = 0; i < count; i++)
+		{
 			serial_write(temp[i]);
 		}
 
@@ -199,95 +200,96 @@ ssize_t serp_write(struct file *filep, const char __user *buff, size_t count, lo
 			RW_ERR = 0;
 			return (ssize_t)count;
 		}
-		else
+	}
+	else
+	{
+		printk(KERN_ALERT "Houve um erro no ssize_t write anterior\n");
+		RW_ERR = 0;
+		return -1;
+	}
+}
+
+void write_uart(int COM_port, int reg, int data)
+{
+
+	//outp((COM_port + reg), data);		//original
+	outb(data, (COM_port + reg)); //como diz no guiao
+	return;
+}
+
+int read_uart(int COM_port, int reg)
+{
+	return (inb(COM_port + reg));
+}
+
+void serial_write(unsigned char ch)
+{
+	while (1)
+	{
+		if (!((unsigned char)read_uart(port_busy, REG_LSR) & 0x20))
 		{
-			printk(KERN_ALERT "Houve um erro no ssize_t write anterior\n");
-			RW_ERR = 0;
-			return -1;
+			schedule();
 		}
+		else
+			break;
 	}
 
-	void write_uart(int COM_port, int reg, int data)
-	{
+	write_uart(port_busy, REG_THR, (int)ch);
+}
 
-		//outp((COM_port + reg), data);		//original
-		outb(data, (COM_port + reg)); //como diz no guiao
-		return;
-	}
+int serial_read(void)
+{
+	unsigned char a, b;
+	set_current_state(TASK_INTERRUPTIBLE);
 
-	int read_uart(int COM_port, int reg)
+	while (1)
 	{
-		return (inb(COM_port + reg));
-	}
-
-	void serial_write(unsigned char ch)
-	{
-		while (1)
+		b = read_uart(port_busy, REG_LSR);
+		if (b & (UART_LSR_FE | UART_LSR_OE | UART_LSR_PE))
 		{
-			if (!((unsigned char)read_uart(port_busy, REG_LSR) & 0x20))
+			printk(KERN_ALERT "erro nos dados lidos\n");
+			return -EIO;
+		}
+		else if (b & UART_LSR_DR)
+		{
+			printk(KERN_ALERT "data ready\n");
+			a = read_uart(port_busy, REG_RHR);
+			if (a != 0)
 			{
-				schedule();
+				printk(KERN_ALERT "carater recebido: %c\n", a);
+				return a;
 			}
 			else
-				break;
-		}
-
-		write_uart(port_busy, REG_THR, (int)ch);
-	}
-
-	int serial_read(void)
-	{
-		unsigned char a, b;
-		set_current_state(TASK_INTERRUPTIBLE);
-
-		while (1)
-		{
-			b = read_uart(port_busy, REG_LSR);
-			if (b & (UART_LSR_FE | UART_LSR_OE | UART_LSR_PE))
 			{
-				printk(KERN_ALERT "erro nos dados lidos\n");
+				printk(KERN_ALERT "erro desconhecido\n");
 				return -EIO;
 			}
-			else if (b & UART_LSR_DR)
-			{
-				printk(KERN_ALERT "data ready\n");
-				a = read_uart(port_busy, REG_RHR);
-				if (a != 0)
-				{
-					printk(KERN_ALERT "carater recebido: %c\n", a);
-					return a;
-				}
-				else
-				{
-					printk(KERN_ALERT "erro desconhecido\n");
-					return -EIO;
-				}
-			}
-			else
-			{
-				schedule_timeout(200); //sao 100 jfs/s, ou seja, 2 segundos
-			}
+		}
+		else
+		{
+			schedule_timeout(200); //sao 100 jfs/s, ou seja, 2 segundos
 		}
 	}
+}
 
-	int setup_serial(int COM_port, int baud, unsigned char misc)
-	{
-		word divisor;
+int setup_serial(int COM_port, int baud, unsigned char misc)
+{
+	word divisor;
 
-		if (port_busy)
-			return (port_busy);
+	if (port_busy)
+		return (port_busy);
 
-		port_busy = COM_port;
+	port_busy = COM_port;
 
-		write_uart(COM_port, REG_IER, 0);
-		write_uart(COM_port, REG_LCR, (int)DLR_ON);
-		divisor = 0x1c200 / baud;
-		//outpw(COM_port, divisor);	//original
-		outw(divisor, COM_port); //como diz no guiao
+	write_uart(COM_port, REG_IER, 0);
+	write_uart(COM_port, REG_LCR, (int)DLR_ON);
+	divisor = 0x1c200 / baud;
+	//outpw(COM_port, divisor);	//original
+	outw(divisor, COM_port); //como diz no guiao
 
-		write_uart(COM_port, REG_LCR, (int)misc);
-		return 1;
-	}
+	write_uart(COM_port, REG_LCR, (int)misc);
+	return 1;
+}
 
-	module_init(serp_init);
-	module_exit(serp_exit);
+module_init(serp_init);
+module_exit(serp_exit);
