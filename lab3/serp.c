@@ -166,12 +166,11 @@ ssize_t serp_read(struct file *filep, char __user *buff, size_t count, loff_t *o
 	}
 }
 
-//a write to an serp device will make it print whatever an application writes to it on the console
 ssize_t serp_write(struct file *filep, const char __user *buff, size_t count, loff_t *offp)
 {
 	if (RW_ERR == 0)
 	{
-		int a = 0, b = 0;
+	/*	int a = 0, b = 0;
 		char *temp = kmalloc(count + 1, GFP_KERNEL);
 		a = copy_from_user(temp, buff, (unsigned long)count);
 		temp[count] = '\0';
@@ -187,8 +186,11 @@ ssize_t serp_write(struct file *filep, const char __user *buff, size_t count, lo
 		{
 			RW_ERR = 0;
 			return (ssize_t)count;
-		}
-	}
+		}*/
+	
+	serial_write('a');
+
+	} 
 	else
 	{
 		printk(KERN_ALERT "Houve um erro no ssize_t write anterior\n");
