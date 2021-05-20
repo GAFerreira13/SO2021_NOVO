@@ -172,8 +172,8 @@ ssize_t serp_write(struct file *filep, const char __user *buff, size_t count, lo
 	if (RW_ERR == 0)
 	{
 		int i;
-		/*	int a = 0, b = 0;
-		
+			int a = 0;
+		/*
 		b = copy_to_user(buff, temp, (unsigned long)count + 1);
 		printk(KERN_ALERT "%s\n", temp);
 		
@@ -183,8 +183,9 @@ ssize_t serp_write(struct file *filep, const char __user *buff, size_t count, lo
 		a = copy_from_user(temp, buff, (unsigned long)count);
 		temp[count] = '\0';
 
-		for (i = 0; i < count; i++)
+		for (i = 0; i < count; i++) {
 			serial_write(temp[i]);
+		}
 
 		kfree(temp);
 
