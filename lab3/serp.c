@@ -67,7 +67,6 @@ ssize_t serp_write(struct file *filep, const char __user *buff, size_t count, lo
 void write_uart(int COM_port, int reg, int data);
 int read_uart(int COM_port, int reg);
 void serial_write(unsigned char ch);
-int serial_read(void);
 int setup_serial(int COM_port, int baud, unsigned char misc);
 
 dev_t serp_number;
@@ -143,6 +142,9 @@ int serp_release(struct inode *inodep, struct file *filep)
 
 ssize_t serp_read(struct file *filep, char __user *buff, size_t count, loff_t *offp)
 {
+	unsigned char a, b;
+	set_current_state(TASK_INTERRUPTIBLE);
+
 	if (RW_ERR == 0)
 	{ /*
 		a = copy_to_user(buff, filep, (int)count);
@@ -156,7 +158,42 @@ ssize_t serp_read(struct file *filep, char __user *buff, size_t count, loff_t *o
 			RW_ERR = 0;
 			return (ssize_t)count;
 		} */
-		serial_read();
+
+		char *temp = kmalloc(count + 1, GFP_KERNEL);
+		a = copy_from_user(temp, buff, (unsigned long)count);
+		temp[count] = '\0';
+
+		while (1)
+		{
+			b = read_uart(port_busy, REG_LSR);
+			if (b & (UART_LSR_FE | UART_LSR_OE | UART_LSR_PE))
+			{
+				printk(KERN_ALERT "erro nos dados lidos\n");
+				return -EIO;
+			}
+			else if (b & UART_LSR_DR)
+			{
+				printk(KERN_ALERT "data ready\n");
+				a = read_uart(port_busy, REG_RHR);
+				if (a != 0)
+				{
+					printk(KERN_ALERT "carater recebido: %c\n", a);
+					temp[0] = a;
+
+					return 1;
+				}
+				else
+				{
+					printk(KERN_ALERT "erro desconhecido\n");
+					return -EIO;
+				}
+			}
+			else
+			{
+				printk(KERN_ALERT "schedule timeout...\n");
+				schedule_timeout(200); //sao 100 jfs/s, ou seja, 2 segundos
+			}
+		}
 		return (ssize_t)count;
 	}
 	else
@@ -209,17 +246,17 @@ ssize_t serp_write(struct file *filep, const char __user *buff, size_t count, lo
 	}
 }
 
+int read_uart(int COM_port, int reg)
+{
+	return (inb(COM_port + reg));
+}
+
 void write_uart(int COM_port, int reg, int data)
 {
 
 	//outp((COM_port + reg), data);		//original
 	outb(data, (COM_port + reg)); //como diz no guiao
 	return;
-}
-
-int read_uart(int COM_port, int reg)
-{
-	return (inb(COM_port + reg));
 }
 
 void serial_write(unsigned char ch)
@@ -235,41 +272,6 @@ void serial_write(unsigned char ch)
 	}
 
 	write_uart(port_busy, REG_THR, (int)ch);
-}
-
-int serial_read(void)
-{
-	unsigned char a, b;
-	set_current_state(TASK_INTERRUPTIBLE);
-
-	while (1)
-	{
-		b = read_uart(port_busy, REG_LSR);
-		if (b & (UART_LSR_FE | UART_LSR_OE | UART_LSR_PE))
-		{
-			printk(KERN_ALERT "erro nos dados lidos\n");
-			return -EIO;
-		}
-		else if (b & UART_LSR_DR)
-		{
-			printk(KERN_ALERT "data ready\n");
-			a = read_uart(port_busy, REG_RHR);
-			if (a != 0)
-			{
-				printk(KERN_ALERT "carater recebido: %c\n", a);
-				return a;
-			}
-			else
-			{
-				printk(KERN_ALERT "erro desconhecido\n");
-				return -EIO;
-			}
-		}
-		else
-		{
-			schedule_timeout(200); //sao 100 jfs/s, ou seja, 2 segundos
-		}
-	}
 }
 
 int setup_serial(int COM_port, int baud, unsigned char misc)
