@@ -160,13 +160,20 @@ ssize_t serp_read(struct file *filep, char __user *buff, size_t count, loff_t *o
 			return (ssize_t)count;
 		} */
 
+		printk(KERN_ALERT "teste 1 \n");
+
 		char *temp = kmalloc(count + 1, GFP_KERNEL);
 		a = copy_from_user(temp, buff, (unsigned long)count);
+				printk(KERN_ALERT "teste 2 \n");
+
 		temp[count] = '\0';
+				printk(KERN_ALERT "teste 3 \n");
+
 
 		while (1)
 		{
 			b = read_uart(port_busy, REG_LSR);
+			printk(KERN_ALERT "teste 4 \n");
 			if (b & (UART_LSR_FE | UART_LSR_OE | UART_LSR_PE))
 			{
 				printk(KERN_ALERT "erro nos dados lidos\n");
@@ -176,20 +183,20 @@ ssize_t serp_read(struct file *filep, char __user *buff, size_t count, loff_t *o
 			else if (b & UART_LSR_DR)
 			{
 				printk(KERN_ALERT "data ready\n");
-				rcv = read_uart(port_busy, REG_RHR);
+				rcv = (char) read_uart(port_busy, REG_RHR);
 				if (rcv != 0 && rcv != '\0')
 				{
 					printk(KERN_ALERT "carater recebido: %c\n", rcv);
 					temp[n] = rcv;
 					n++;
-					tmp = copy_to_user(buff, temp, 1);
+					tmp = copy_to_user(buff, temp, n);
 					if (tmp != 0)
 					{
 						printk(KERN_ALERT "houve %d letras nao escritas\n", tmp);
 					}
 
 				}
-				else if (rcv == '\0')
+				else if (rcv == '0')
 				{
 					printk(KERN_ALERT "frase recebida: %s\n", temp);
 					kfree(temp);
@@ -206,6 +213,7 @@ ssize_t serp_read(struct file *filep, char __user *buff, size_t count, loff_t *o
 			else
 			{
 				msleep_interruptible(500);
+				printk(KERN_ALERT "sleep \n");
 			}
 		}
 		return (ssize_t)count;
