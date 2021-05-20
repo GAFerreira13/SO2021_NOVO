@@ -179,6 +179,7 @@ ssize_t serp_read(struct file *filep, char __user *buff, size_t count, loff_t *o
 				{
 					printk(KERN_ALERT "carater recebido: %c\n", a);
 					temp[0] = a;
+					copy_to_user(buff, temp, 1);
 
 					return 1;
 				}
@@ -191,7 +192,7 @@ ssize_t serp_read(struct file *filep, char __user *buff, size_t count, loff_t *o
 			else
 			{
 				printk(KERN_ALERT "schedule timeout...\n");
-				schedule_timeout(200); //sao 100 jfs/s, ou seja, 2 segundos
+				msleep_interruptible(2000);
 			}
 		}
 		return (ssize_t)count;
