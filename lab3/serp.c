@@ -184,23 +184,24 @@ ssize_t serp_read(struct file *filep, char __user *buff, size_t count, loff_t *o
 			{
 				printk(KERN_ALERT "data ready\n");
 				rcv = (char) read_uart(port_busy, REG_RHR);
-				if (rcv != 0 && rcv != '\0')
+				if (rcv != '!')
 				{
 					printk(KERN_ALERT "carater recebido: %c\n", rcv);
 					temp[n] = rcv;
 					n++;
+					
+
+				}
+				else if (rcv == '!')
+				{
 					tmp = copy_to_user(buff, temp, n);
 					if (tmp != 0)
 					{
 						printk(KERN_ALERT "houve %d letras nao escritas\n", tmp);
 					}
-
-				}
-				else if (rcv == '0')
-				{
 					printk(KERN_ALERT "frase recebida: %s\n", temp);
 					kfree(temp);
-					return 1;
+					break;
 
 				}
 				else
@@ -220,7 +221,8 @@ ssize_t serp_read(struct file *filep, char __user *buff, size_t count, loff_t *o
 	}
 	else
 	{
-		printk(KERN_ALERT "Houve um erro no ssize_t read anterior\n");
+		printk(KERN_ALERT "Houve um erro no ssize_cd lab3
+		t read anterior\n");
 		RW_ERR = 0;
 		return -1;
 	}
