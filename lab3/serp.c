@@ -143,6 +143,7 @@ int serp_release(struct inode *inodep, struct file *filep)
 ssize_t serp_read(struct file *filep, char __user *buff, size_t count, loff_t *offp)
 {
 	unsigned char a, b;
+	int n = 0;
 	set_current_state(TASK_INTERRUPTIBLE);
 
 	if (RW_ERR == 0)
@@ -169,6 +170,7 @@ ssize_t serp_read(struct file *filep, char __user *buff, size_t count, loff_t *o
 			if (b & (UART_LSR_FE | UART_LSR_OE | UART_LSR_PE))
 			{
 				printk(KERN_ALERT "erro nos dados lidos\n");
+				kfree(temp);
 				return -EIO;
 			}
 			else if (b & UART_LSR_DR)
@@ -178,21 +180,29 @@ ssize_t serp_read(struct file *filep, char __user *buff, size_t count, loff_t *o
 				if (a != 0)
 				{
 					printk(KERN_ALERT "carater recebido: %c\n", a);
-					temp[0] = a;
+					temp[n] = a;
+					n++;
 					copy_to_user(buff, temp, 1);
 
 					return 1;
 				}
+				else if ((char) a == '\0')
+				{
+					printk(KERN_ALERT "frase recebida: %s\n", temp);
+					kfree(temp);
+					return 1;
+
+				}
 				else
 				{
 					printk(KERN_ALERT "erro desconhecido\n");
+					kfree(temp);
 					return -EIO;
 				}
 			}
 			else
 			{
-				printk(KERN_ALERT "schedule timeout...\n");
-				msleep_interruptible(2000);
+				msleep_interruptible(500);
 			}
 		}
 		return (ssize_t)count;
