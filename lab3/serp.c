@@ -239,9 +239,10 @@ int serial_read(void)
 	else if (b & UART_LSR_DR)
 	{
 		a = read_uart(port_busy, REG_RHR);
-		if (a != 0)
+		if (a != 0) {
 		printk(KERN_ALERT "carater recebido: %c", a);
 			return a;
+		}
 		else
 			return -EIO;
 	}
