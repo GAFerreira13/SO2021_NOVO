@@ -148,15 +148,15 @@ int serp_release(struct inode *inodep, struct file *filep)
 }
 
 ssize_t serp_read(struct file *filep, char __user *buff, size_t count, loff_t *offp) {
-	
+
 	unsigned char b ='\0', rcv='\0';
 	int n = 0, timeout = 0;
 	char * temp = kmalloc(count + 1, GFP_KERNEL);
-	
+
 	set_current_state(TASK_INTERRUPTIBLE);
-	
-	
-	if (!RW_ERR) {
+
+
+	if (RW_ERR) {
 			printk(KERN_ALERT "There was a error in the previous read! Returning now...\n");
 			RW_ERR = 0;
 			return -1;
@@ -192,7 +192,7 @@ ssize_t serp_read(struct file *filep, char __user *buff, size_t count, loff_t *o
 			}
 		}
 	}
-	temp[count] = '\0';
+	temp[n] = '\0';
 	if (copy_to_user(buff, temp, n)) {
 		printk(KERN_ALERT "Wrong number of read letters!\n");
 	}
@@ -201,10 +201,10 @@ ssize_t serp_read(struct file *filep, char __user *buff, size_t count, loff_t *o
 }
 
 ssize_t serp_write(struct file *filep, const char __user *buff, size_t count, loff_t *offp) {
-	
+
 	int i, a = 0;
 	char *temp = kmalloc(count, GFP_KERNEL);
-	
+
 	if (RW_ERR) {
 		printk(KERN_ALERT "There was a error in the previous write! Returning now...\n");
 		RW_ERR = 0;

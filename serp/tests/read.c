@@ -33,28 +33,18 @@ int main(int argc, char *argv[])
 	//fgets (aux, STR_LEN, stdin);
 	//int char_num = read ( f, aux, strlen(aux));
 
-	while (aux[0] != '!')
-	{
-		if (read(f, aux, STR_LEN) != -1)
-		{
-			//printf("Char number: %d | Char: %c\n", aux[0], aux[0]);
-			puts (aux);
-		}
-		else
-		{
-			printf("Error reading char\n");
-			return -1;
-		}
-	}
-	printf("End of read\n");
 
-	/* if (char_num < 0) {
-		printf ("Errro writing in device! \n");
-	} else if (char_num != strlen(aux)) {
-		printf ("Wrong number of bytes written! %d %d \n", char_num, strlen(aux));
-	} else {
-		printf ("Success! \n");
-	} */
+	if (read(f, aux, STR_LEN) != -1)
+	{
+		//printf("Char number: %d | Char: %c\n", aux[0], aux[0]);
+		puts (aux);
+	}
+	else
+	{
+		printf("Error reading char\n");
+		return -1;
+	}
+
 
 	if (close(f))
 	{
