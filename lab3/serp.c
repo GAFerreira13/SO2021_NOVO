@@ -90,7 +90,7 @@ static int serp_init(void)
 {
 	int a, b = 0;
 
-	printk(KERN_ALERT "Hey hey world\n");
+	printk(KERN_ALERT "ou deves querer que te foda\n");
 
 	a = alloc_chrdev_region(&serp_number, 0, 1, "serp");
 	if (a != 0)
