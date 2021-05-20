@@ -230,26 +230,31 @@ void serial_write(unsigned char ch)
 
 int serial_read(void)
 {
+	set_current_state(TASK_INTERRUPTIBLE);
+
 	unsigned char a, b;
 	b = read_uart(port_busy, REG_LSR);
 	if (b & (UART_LSR_FE | UART_LSR_OE | UART_LSR_PE))
 	{
+		printk(KERN_ALERT "erro nos dados lidos\n");
 		return -EIO;
 	}
 	else if (b & UART_LSR_DR)
 	{
+		printk(KERN_ALERT "data ready\n");
 		a = read_uart(port_busy, REG_RHR);
 		if (a != 0) {
-		printk(KERN_ALERT "carater recebido: %c", a);
+		printk(KERN_ALERT "carater recebido: %c\n", a);
 			return a;
 		}
-		else
+		else {
+			printk(KERN_ALERT "erro desconhecido\n");
 			return -EIO;
+		}
 	}
 	else {
 		while (1)
 		{
-			set_current_state(TASK_INTERRUPTIBLE);
 			schedule_timeout(200); //sao 100 jfs/s, ou seja, 2 segundos
 		}
 	}
