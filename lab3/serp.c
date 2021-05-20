@@ -158,7 +158,7 @@ ssize_t serp_read(struct file *filep, char __user *buff, size_t count, loff_t *o
 			return (ssize_t)count;
 		} */
 		serial_read();
-
+		return (ssize_t) count;
 	}
 	else
 	{
@@ -172,7 +172,7 @@ ssize_t serp_write(struct file *filep, const char __user *buff, size_t count, lo
 {
 	if (RW_ERR == 0)
 	{
-	/*	int a = 0, b = 0;
+		/*	int a = 0, b = 0;
 		char *temp = kmalloc(count + 1, GFP_KERNEL);
 		a = copy_from_user(temp, buff, (unsigned long)count);
 		temp[count] = '\0';
@@ -189,10 +189,10 @@ ssize_t serp_write(struct file *filep, const char __user *buff, size_t count, lo
 			RW_ERR = 0;
 			return (ssize_t)count;
 		}*/
-	
-	serial_write('a');
 
-	} 
+		serial_write('a');
+		return (ssize_t) count;
+	}
 	else
 	{
 		printk(KERN_ALERT "Houve um erro no ssize_t write anterior\n");
@@ -206,6 +206,7 @@ void write_uart(int COM_port, int reg, int data)
 
 	//outp((COM_port + reg), data);		//original
 	outb(data, (COM_port + reg)); //como diz no guiao
+	return;
 }
 
 int read_uart(int COM_port, int reg)
@@ -233,27 +234,30 @@ int serial_read(void)
 	set_current_state(TASK_INTERRUPTIBLE);
 
 	unsigned char a, b;
-	b = read_uart(port_busy, REG_LSR);
-	if (b & (UART_LSR_FE | UART_LSR_OE | UART_LSR_PE))
+	while (1)
 	{
-		printk(KERN_ALERT "erro nos dados lidos\n");
-		return -EIO;
-	}
-	else if (b & UART_LSR_DR)
-	{
-		printk(KERN_ALERT "data ready\n");
-		a = read_uart(port_busy, REG_RHR);
-		if (a != 0) {
-		printk(KERN_ALERT "carater recebido: %c\n", a);
-			return a;
-		}
-		else {
-			printk(KERN_ALERT "erro desconhecido\n");
+		b = read_uart(port_busy, REG_LSR);
+		if (b & (UART_LSR_FE | UART_LSR_OE | UART_LSR_PE))
+		{
+			printk(KERN_ALERT "erro nos dados lidos\n");
 			return -EIO;
 		}
-	}
-	else {
-		while (1)
+		else if (b & UART_LSR_DR)
+		{
+			printk(KERN_ALERT "data ready\n");
+			a = read_uart(port_busy, REG_RHR);
+			if (a != 0)
+			{
+				printk(KERN_ALERT "carater recebido: %c\n", a);
+				return a;
+			}
+			else
+			{
+				printk(KERN_ALERT "erro desconhecido\n");
+				return -EIO;
+			}
+		}
+		else
 		{
 			schedule_timeout(200); //sao 100 jfs/s, ou seja, 2 segundos
 		}
