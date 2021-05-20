@@ -9,7 +9,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#define STR_LEN 16
+#define STR_LEN 100
 
 int main(int argc, char *argv[])
 {
@@ -35,9 +35,10 @@ int main(int argc, char *argv[])
 
 	while (aux[0] != '!')
 	{
-		if (read(f, aux, 1) != -1)
+		if (read(f, aux, STR_LEN) != -1)
 		{
-			printf("Char number: %d | Char: %c\n", aux[0], aux[0]);
+			//printf("Char number: %d | Char: %c\n", aux[0], aux[0]);
+			puts (aux);
 		}
 		else
 		{
