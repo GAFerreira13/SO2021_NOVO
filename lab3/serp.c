@@ -189,7 +189,7 @@ ssize_t serp_read(struct file *filep, char __user *buff, size_t count, loff_t *o
 					}
 
 				}
-				else if ((rcv == '\0')
+				else if (rcv == '\0')
 				{
 					printk(KERN_ALERT "frase recebida: %s\n", temp);
 					kfree(temp);
