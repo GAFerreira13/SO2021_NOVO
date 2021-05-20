@@ -142,8 +142,8 @@ int serp_release(struct inode *inodep, struct file *filep)
 
 ssize_t serp_read(struct file *filep, char __user *buff, size_t count, loff_t *offp)
 {
-	unsigned char a, b;
-	int n = 0;
+	unsigned char a, b, rcv;
+	int tmp, n = 0;
 	set_current_state(TASK_INTERRUPTIBLE);
 
 	if (RW_ERR == 0)
@@ -176,17 +176,20 @@ ssize_t serp_read(struct file *filep, char __user *buff, size_t count, loff_t *o
 			else if (b & UART_LSR_DR)
 			{
 				printk(KERN_ALERT "data ready\n");
-				a = read_uart(port_busy, REG_RHR);
-				if (a != 0)
+				rcv = read_uart(port_busy, REG_RHR);
+				if (rcv != 0 && rcv != '\0')
 				{
-					printk(KERN_ALERT "carater recebido: %c\n", a);
-					temp[n] = a;
+					printk(KERN_ALERT "carater recebido: %c\n", rcv);
+					temp[n] = rcv;
 					n++;
-					copy_to_user(buff, temp, 1);
+					tmp = copy_to_user(buff, temp, 1);
+					if (tmp != 0)
+					{
+						printk(KERN_ALERT "houve %d letras nao escritas\n", tmp);
+					}
 
-					return 1;
 				}
-				else if ((char) a == '\0')
+				else if ((rcv == '\0')
 				{
 					printk(KERN_ALERT "frase recebida: %s\n", temp);
 					kfree(temp);
