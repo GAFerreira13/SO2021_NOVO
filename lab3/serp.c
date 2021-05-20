@@ -221,8 +221,7 @@ ssize_t serp_read(struct file *filep, char __user *buff, size_t count, loff_t *o
 	}
 	else
 	{
-		printk(KERN_ALERT "Houve um erro no ssize_cd lab3
-		t read anterior\n");
+		printk(KERN_ALERT "Houve um erro no ssize_cd lab3 read anterior\n");
 		RW_ERR = 0;
 		return -1;
 	}
