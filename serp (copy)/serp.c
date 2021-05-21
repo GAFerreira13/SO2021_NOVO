@@ -165,6 +165,7 @@ ssize_t serp_read(struct file *filep, char __user *buff, size_t count, loff_t *o
 		if (b & (UART_LSR_FE | UART_LSR_OE | UART_LSR_PE))
 		{
 			printk(KERN_ALERT "Error in the read data!\n");
+			RW_ERR = 1;
 			kfree(temp);
 			return -EIO;
 		}
@@ -200,7 +201,8 @@ ssize_t serp_read(struct file *filep, char __user *buff, size_t count, loff_t *o
 	temp[n] = '\0';
 	if (copy_to_user(buff, temp, n))
 	{
-		printk(KERN_ALERT "Wrong number of read letters!\n");
+		printk(KERN_ALERT "Wrong number of characters read!\n");
+		RW_ERR = 1;
 	}
 	kfree(temp);
 	return (ssize_t)count;
