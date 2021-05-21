@@ -4,6 +4,7 @@
  *	Gonçalo Ferreira de Albuquerque
  */
 
+
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/init.h>
@@ -22,6 +23,7 @@
 #include <linux/ioport.h>
 #include <linux/sched.h>
 #include <linux/delay.h>
+
 
 #define PORT_COM1 0x3f8
 typedef short word;
@@ -84,12 +86,12 @@ struct file_operations fops = {
 struct resource *serp_res;
 int RW_ERR = 0;
 
-static int serp_init(void)
-{
+
+
+static int serp_init(void) {
 	printk(KERN_ALERT "Serp initialization!\n");
 
-	if (alloc_chrdev_region(&serp_number, 0, 1, "serp"))
-	{
+	if (alloc_chrdev_region(&serp_number, 0, 1, "serp")) {
 		printk(KERN_ALERT "Error creating major device number!");
 		return -1;
 	}
@@ -100,10 +102,9 @@ static int serp_init(void)
 	serp_cdev->ops = &fops;
 	serp_cdev->owner = THIS_MODULE;
 
-	if (cdev_add(serp_cdev, serp_number, SERP_DEVS) < 0)
-	{
-		printk(KERN_ALERT "Error adding minor device!");
-	}
+	if (cdev_add(serp_cdev, serp_number, SERP_DEVS)<0) {
+    printk(KERN_ALERT "Error adding minor device!");
+  }
 
 	serp_res = request_region(0x3f8, 8, "serp");
 	setup_serial(PORT_COM1, 96, BITS_8 | PARITY_EVEN | STOP_TWO);
@@ -111,21 +112,23 @@ static int serp_init(void)
 	return 0;
 }
 
-static void serp_exit(void)
-{
-	printk(KERN_ALERT "Serp exit funtion called!\n");
+
+
+static void serp_exit(void) {
+  printk(KERN_ALERT "Serp exit funtion called!\n");
 	printk(KERN_ALERT "Major number: %d\n", MAJOR(serp_number));
 
 	cdev_del(serp_cdev);
-	kfree(serp_cdev);
+  kfree(serp_cdev);
 
-	unregister_chrdev_region(serp_number, SERP_DEVS);
+  unregister_chrdev_region(serp_number, SERP_DEVS);
 
-	return;
+  return ;
 }
 
-int serp_open(struct inode *inodep, struct file *filep)
-{
+
+
+int serp_open(struct inode *inodep, struct file *filep) {
 
 	printk(KERN_ALERT "Open function called!\n");
 
@@ -141,121 +144,101 @@ int serp_release(struct inode *inodep, struct file *filep)
 	return 0;
 }
 
-ssize_t serp_read(struct file *filep, char __user *buff, size_t count, loff_t *offp)
-{
+ssize_t serp_read(struct file *filep, char __user *buff, size_t count, loff_t *offp) {
 
-	unsigned char b = '\0', rcv = '\0';
+	unsigned char b ='\0', rcv='\0';
 	int n = 0, timeout = 0;
-	char *temp = kmalloc(count + 1, GFP_KERNEL);
+	char * temp = kmalloc(count + 1, GFP_KERNEL);
 
 	set_current_state(TASK_INTERRUPTIBLE);
 
-	if (RW_ERR)
-	{
-		printk(KERN_ALERT "There was an error in the previous read! Returning now...\n");
-		RW_ERR = 0;
-		kfree(temp);
-		return -EINTR;
+
+	if (RW_ERR) {
+			printk(KERN_ALERT "There was an error in the previous read! Returning now...\n");
+			RW_ERR = 0;
+			return -EINTR;
 	}
 
-	while (1)
-	{
+
+	while (1) {
 
 		b = read_uart(PORT_COM1, REG_LSR);
-		if (b & (UART_LSR_FE | UART_LSR_OE | UART_LSR_PE))
-		{
+		if (b & (UART_LSR_FE | UART_LSR_OE | UART_LSR_PE)) {
 			printk(KERN_ALERT "Error in the read data!\n");
-			RW_ERR = 1;
 			kfree(temp);
 			return -EIO;
 		}
 
-		if (b & UART_LSR_DR)
-		{
+		if (b & UART_LSR_DR) {
 			timeout = 0;
-			rcv = (char)read_uart(PORT_COM1, REG_RHR);
-			if (rcv != '!')
-			{
+			rcv = (char) read_uart(PORT_COM1, REG_RHR);
+			if (rcv != '!') {
 				temp[n++] = rcv;
-				if (n == count)
-				{
+				if (n == count) {
 					break;
 				}
-			}
-			else
-			{
+			}	else {
 				break;
 			}
-		}
-		else
-		{
+		} else {
 			msleep_interruptible(500);
 			timeout++;
-			if (timeout > 10)
-			{
+			if (timeout > 10) {
 				printk(KERN_ALERT "Timeout achieved!\n");
 				break;
 			}
 		}
 	}
 	temp[n] = '\0';
-	if (copy_to_user(buff, temp, n))
-	{
-		printk(KERN_ALERT "Wrong number of characters read!\n");
-		RW_ERR = 1;
+	if (copy_to_user(buff, temp, n)) {
+		printk(KERN_ALERT "Wrong number of read letters!\n");
 	}
 	kfree(temp);
 	return (ssize_t)count;
 }
 
-ssize_t serp_write(struct file *filep, const char __user *buff, size_t count, loff_t *offp)
-{
+ssize_t serp_write(struct file *filep, const char __user *buff, size_t count, loff_t *offp) {
 
 	int i, a = 0;
 	char *temp = kmalloc(count, GFP_KERNEL);
 
-	if (RW_ERR)
-	{
+	if (RW_ERR) {
 		printk(KERN_ALERT "There was an error in the previous write! Returning now...\n");
 		RW_ERR = 0;
-		kfree(temp);
 		return -EINTR;
 	}
 
 	a = copy_from_user(temp, buff, (unsigned long)count);
 
-	for (i = 0; i < count; i++)
-	{
+	for (i = 0; i < count; i++) {
 		serial_write(temp[i]);
 	}
 
 	kfree(temp);
 
-	if (a != 0)
-	{
+	if (a != 0) {
 		printk(KERN_ALERT "Wrong number of written letters!\n");
 		RW_ERR = 1;
 	}
 
 	RW_ERR = 0;
-	return (ssize_t)count - a;
+	return (ssize_t) count - a;
+
 }
 
 /* Funções auxiliares */
 
-int read_uart(int COM_port, int reg)
-{
+int read_uart(int COM_port, int reg) {
 	return (inb(COM_port + reg));
 }
 
-void write_uart(int COM_port, int reg, int data)
-{
-	outb(data, (COM_port + reg)); 
+void write_uart(int COM_port, int reg, int data) {
+	//outp((COM_port + reg), data);		//original
+	outb(data, (COM_port + reg)); //como diz no guiao
 	return;
 }
 
-void serial_write(unsigned char ch)
-{
+void serial_write(unsigned char ch) {
 	while (1)
 	{
 		if (!((unsigned char)read_uart(PORT_COM1, REG_LSR) & 0x20))
@@ -267,17 +250,18 @@ void serial_write(unsigned char ch)
 	}
 
 	write_uart(PORT_COM1, REG_THR, (int)ch);
-	return;
+	return ;
 }
 
-int setup_serial(int COM_port, int baud, unsigned char misc)
-{
+int setup_serial(int COM_port, int baud, unsigned char misc) {
 	word divisor;
+
 
 	write_uart(COM_port, REG_IER, 0);
 	write_uart(COM_port, REG_LCR, (int)DLR_ON);
 	divisor = 0x1c200 / baud;
-	outw(divisor, COM_port); 
+	//outpw(COM_port, divisor);	//original
+	outw(divisor, COM_port); //como diz no guiao
 
 	write_uart(COM_port, REG_LCR, (int)misc);
 	return 1;
