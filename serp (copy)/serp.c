@@ -216,6 +216,7 @@ ssize_t serp_write(struct file *filep, const char __user *buff, size_t count, lo
 	{
 		printk(KERN_ALERT "There was an error in the previous write! Returning now...\n");
 		RW_ERR = 0;
+		kfree(temp);
 		return -EINTR;
 	}
 
@@ -247,8 +248,7 @@ int read_uart(int COM_port, int reg)
 
 void write_uart(int COM_port, int reg, int data)
 {
-	//outp((COM_port + reg), data);		//original
-	outb(data, (COM_port + reg)); //como diz no guiao
+	outb(data, (COM_port + reg)); 
 	return;
 }
 
@@ -275,8 +275,7 @@ int setup_serial(int COM_port, int baud, unsigned char misc)
 	write_uart(COM_port, REG_IER, 0);
 	write_uart(COM_port, REG_LCR, (int)DLR_ON);
 	divisor = 0x1c200 / baud;
-	//outpw(COM_port, divisor);	//original
-	outw(divisor, COM_port); //como diz no guiao
+	outw(divisor, COM_port); 
 
 	write_uart(COM_port, REG_LCR, (int)misc);
 	return 1;
